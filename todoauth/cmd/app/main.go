@@ -3,20 +3,21 @@ package main
 import (
 	"context"
 	"errors"
-	"lib/mongodb"
-	"lib/pem"
 	"os/signal"
 	"syscall"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"auth/internal/config"
-	"auth/internal/db"
-	"auth/internal/httpapi"
-	"auth/internal/repository/mongo"
-	"auth/internal/service"
-	"auth/internal/token"
+	"todolib/mongodb"
+	"todolib/pem"
+
+	"todoauth/internal/config"
+	"todoauth/internal/db"
+	"todoauth/internal/httpapi"
+	"todoauth/internal/repository/mongo"
+	"todoauth/internal/service"
+	"todoauth/internal/token"
 )
 
 var application string

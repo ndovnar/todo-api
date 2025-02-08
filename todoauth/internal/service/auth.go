@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"auth/internal/model"
-	"auth/internal/repository"
-	"auth/internal/token"
-	"auth/internal/util"
-
 	"github.com/rs/zerolog/log"
+
+	"todoauth/internal/model"
+	"todoauth/internal/repository"
+	"todoauth/internal/token"
+	"todoauth/internal/util"
 )
 
 type AuthService interface {

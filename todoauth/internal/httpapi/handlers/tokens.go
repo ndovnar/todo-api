@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"auth/internal/service"
-	"lib/auth"
-	"lib/ginhelper"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"todoauth/internal/service"
+
+	"todolib/auth"
+	"todolib/ginhelper"
 )
 
 type Tokens struct {

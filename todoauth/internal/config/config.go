@@ -1,15 +1,16 @@
 package config
 
 import (
-	"lib/mongodb"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"auth/internal/httpapi"
-	"auth/internal/token"
+	"todolib/mongodb"
+
+	"todoauth/internal/httpapi"
+	"todoauth/internal/token"
 )
 
 type Config struct {

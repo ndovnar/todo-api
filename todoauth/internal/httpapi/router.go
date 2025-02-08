@@ -1,9 +1,10 @@
 package httpapi
 
 import (
-	"auth/internal/httpapi/handlers"
-	"lib/auth"
-	"lib/ginhelper"
+	"todolib/auth"
+	"todolib/ginhelper"
+
+	"todoauth/internal/httpapi/handlers"
 )
 
 func (a *HTTPAPI) regiesterRoutes() {

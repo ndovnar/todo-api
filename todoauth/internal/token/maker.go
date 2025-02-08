@@ -4,7 +4,7 @@ import (
 	"crypto/rsa"
 	"time"
 
-	"lib/auth"
+	"todolib/auth"
 )
 
 type TokenMaker struct {

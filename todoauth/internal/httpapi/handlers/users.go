@@ -1,13 +1,15 @@
 package handlers
 
 import (
-	"auth/internal/model"
-	"auth/internal/service"
-	"lib/db"
-	"lib/ginhelper"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"todolib/db"
+	"todolib/ginhelper"
+
+	"todoauth/internal/model"
+	"todoauth/internal/service"
 )
 
 type Users struct {

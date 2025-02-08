@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	"auth/internal/model"
-	"auth/internal/repository"
-	"auth/internal/util"
+	"todoauth/internal/model"
+	"todoauth/internal/repository"
+	"todoauth/internal/util"
 )
 
 type UserService interface {

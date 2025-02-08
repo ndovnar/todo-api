@@ -1,9 +1,9 @@
 package mongodb
 
 import (
-	"lib/db"
-
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"todolib/db"
 )
 
 func MongoErrorToDBError(err error) error {

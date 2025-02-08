@@ -1,4 +1,4 @@
-module auth
+module todoauth
 
 go 1.23.0
 

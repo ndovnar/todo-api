@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"auth/internal/model"
 	"context"
+
+	"todoauth/internal/model"
 )
 
 type UserRepository interface {

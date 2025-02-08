@@ -8,8 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"auth/internal/model"
-	"lib/mongodb"
+	"todolib/mongodb"
+
+	"todoauth/internal/model"
 )
 
 type userRepository struct {

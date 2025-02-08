@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"auth/internal/service"
 	"context"
 	"crypto/rsa"
 	"errors"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+
+	"todoauth/internal/service"
 )
 
 const shutdownMaxDuration = 15 * time.Second

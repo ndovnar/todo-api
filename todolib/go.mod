@@ -1,4 +1,4 @@
-module lib
+module todolib
 
 go 1.23.0
 

@@ -1,16 +1,17 @@
 package mongo
 
 import (
-	"auth/internal/model"
 	"context"
 	"fmt"
 	"time"
 
-	"lib/db"
-	"lib/mongodb"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"todolib/db"
+	"todolib/mongodb"
+
+	"todoauth/internal/model"
 )
 
 type sessionRepository struct {
