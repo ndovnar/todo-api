@@ -1,0 +1,33 @@
+package config
+
+import (
+	"os"
+
+	"github.com/kelseyhightower/envconfig"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+
+	"todolib/mongodb"
+
+	"todoauth/internal/httpapi"
+	"todoauth/internal/token"
+)
+
+type Config struct {
+	LogLevel   zerolog.Level `default:"info" desc:"Level for generated logs"`
+	Mongo      mongodb.Config
+	HTTPAPI    httpapi.Config
+	Token      token.Config
+	PublicKey  string `required:"true"`
+	PrivateKey string `required:"true"`
+}
+
+func Load() (Config, error) {
+	cfg := Config{}
+	err := envconfig.Process("CONFIG", &cfg)
+
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zerolog.SetGlobalLevel(cfg.LogLevel)
+
+	return cfg, err
+}
