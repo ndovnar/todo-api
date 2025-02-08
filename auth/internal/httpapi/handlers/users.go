@@ -20,7 +20,7 @@ func NewUsers(userService service.UserService) *Users {
 	}
 }
 
-func (h *Users) RegisterUser(ctx *gin.Context) {
+func (h *Users) CreateUser(ctx *gin.Context) {
 	var req registerUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))

@@ -16,9 +16,8 @@ func (a *HTTPAPI) regiesterRoutes() {
 	authorized.Use(auth.AuthMiddleware(a.publicKey))
 
 	authorized.POST("/logout", tokenHandlers.HandleLogout)
-
 	a.router.POST("/login", tokenHandlers.HandleLogin)
+	a.router.POST("/users", userHandlers.CreateUser)
 	a.router.POST("/tokens/renew/access", tokenHandlers.HandleRenewAccessToken)
 	a.router.POST("/tokens/renew/refresh", tokenHandlers.HandleRenewRefreshToken)
-	a.router.POST("/users", userHandlers.RegisterUser)
 }
