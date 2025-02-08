@@ -285,6 +285,7 @@ bin/**
 output/**
 templater.md
 .makerc
+output
 
 .idea
 go.work.sum
