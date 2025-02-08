@@ -21,7 +21,7 @@ func NewUsers(userService service.UserService) *Users {
 }
 
 func (h *Users) CreateUser(ctx *gin.Context) {
-	var req registerUserRequest
+	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
@@ -38,22 +38,22 @@ func (h *Users) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	resp := newUserResponse(user)
+	resp := newCreateUserResponse(user)
 	ctx.JSON(http.StatusOK, resp)
 }
 
-type registerUserRequest struct {
+type createUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
-type userResponse struct {
+type createUserResponse struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
 }
 
-func newUserResponse(user *model.User) *userResponse {
-	return &userResponse{
+func newCreateUserResponse(user *model.User) *createUserResponse {
+	return &createUserResponse{
 		ID:    user.ID,
 		Email: user.Email,
 	}
