@@ -16,7 +16,7 @@ func TodoModelToDTO(todo *model.Todo) *dto.Todo {
 }
 
 func TodosModelToDTO(todos []*model.Todo) []*dto.Todo {
-	converted := []*dto.Todo{}
+	converted := make([]*dto.Todo, len(todos))
 
 	for _, todo := range todos {
 		converted = append(converted, TodoModelToDTO(todo))
@@ -36,7 +36,7 @@ func TodoDTOToModel(todo *dto.Todo) *model.Todo {
 }
 
 func TodosDTOToModel(todos []*dto.Todo) []*model.Todo {
-	converted := []*model.Todo{}
+	converted := make([]*model.Todo, len(todos))
 
 	for _, todo := range todos {
 		converted = append(converted, TodoDTOToModel(todo))
