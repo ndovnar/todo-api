@@ -18,8 +18,8 @@ type Config struct {
 	Mongo      mongodb.Config
 	HTTPAPI    httpapi.Config
 	Token      token.Config
-	PublicKey  string `required:"true"`
 	PrivateKey string `required:"true"`
+	PublicKey  string `required:"true"`
 }
 
 func Load() (Config, error) {
