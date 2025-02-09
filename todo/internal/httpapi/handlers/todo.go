@@ -43,7 +43,11 @@ func (h *Todos) HandleGetTodos(ctx *gin.Context) {
 
 	claims := auth.GetClaimsFromContext(ctx)
 
-	todos, count, err := h.todoService.GetTodos(ctx, req.Offset, req.Limit, claims.UserID)
+	todos, count, err := h.todoService.GetTodos(ctx, &service.GetTodosParams{
+		Offset: req.Offset,
+		Limit:  req.Limit,
+		UserID: claims.UserID,
+	})
 	if err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusInternalServerError))
 		return
@@ -59,7 +63,10 @@ func (h *Todos) HandleGetTodo(ctx *gin.Context) {
 	id := ctx.Param("id")
 	claims := auth.GetClaimsFromContext(ctx)
 
-	todo, err := h.todoService.GetTodo(ctx, id, claims.UserID)
+	todo, err := h.todoService.GetTodo(ctx, &service.GetTodoParams{
+		ID:     id,
+		UserID: claims.UserID,
+	})
 	if err != nil {
 		if err == db.ErrNotFound {
 			ctx.Error(ginhelper.NewHttpError(http.StatusNotFound))
@@ -86,10 +93,12 @@ func (h *Todos) HandleCreateTodo(ctx *gin.Context) {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
-	todo, err := h.todoService.CreateTodo(ctx, &dto.Todo{
-		Title:       req.Title,
-		Description: req.Description,
-		UserID:      claims.UserID,
+	todo, err := h.todoService.CreateTodo(ctx, &service.CreateTodoParams{
+		Todo: &dto.Todo{
+			Title:       req.Title,
+			Description: req.Description,
+			UserID:      claims.UserID,
+		},
 	})
 	if err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusInternalServerError))
@@ -114,9 +123,13 @@ func (h *Todos) HandleUpdateTodo(ctx *gin.Context) {
 		return
 	}
 
-	todo, err := h.todoService.UpdateTodo(ctx, id, claims.UserID, &dto.Todo{
-		Title:       req.Title,
-		Description: req.Description,
+	todo, err := h.todoService.UpdateTodo(ctx, &service.UpdateTodoParams{
+		ID:     id,
+		UserID: claims.UserID,
+		Todo: &dto.Todo{
+			Title:       req.Title,
+			Description: req.Description,
+		},
 	})
 	if err != nil {
 		if err == db.ErrNotFound {
@@ -135,7 +148,10 @@ func (h *Todos) HandleDeleteTodo(ctx *gin.Context) {
 	id := ctx.Param("id")
 	claims := auth.GetClaimsFromContext(ctx)
 
-	err := h.todoService.DeleteTodo(ctx, id, claims.UserID)
+	err := h.todoService.DeleteTodo(ctx, &service.DeleteTodoParams{
+		ID:     id,
+		UserID: claims.UserID,
+	})
 	if err != nil {
 		if err == db.ErrNotFound {
 			ctx.Error(ginhelper.NewHttpError(http.StatusNotFound))
