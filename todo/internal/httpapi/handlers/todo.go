@@ -36,7 +36,7 @@ type getTodosResponse struct {
 
 func (h *Todos) HandleGetTodos(ctx *gin.Context) {
 	var req getTodosRequest
-	if err := ctx.ShouldBindQuery(req); err != nil {
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
