@@ -34,6 +34,22 @@ services:
         - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
         - CONFIG_MONGO_USETLS=false
         - CONFIG_HTTPAPI_PORT=${AUTH_API_PORT}
+  todoprofile:
+      build:
+        context: ./
+        dockerfile: ./todoprofile/build/docker/Dockerfile
+      ports:
+        - "${PROFILE_API_PORT}:${PROFILE_API_PORT}"
+      depends_on:
+        - mongo
+      environment: 
+        - CONFIG_PUBLICKEY=${PUBLIC_KEY}
+        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
+        - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
+        - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
+        - CONFIG_MONGO_USETLS=false
+        - CONFIG_HTTPAPI_PORT=${PROFILE_API_PORT}
   todo:
       build:
         context: ./
