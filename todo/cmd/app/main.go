@@ -33,9 +33,9 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to load config")
 	}
 
-	publicKey, err := pem.ReadPublicKey(config.PublicKey)
+	publicKey, err := pem.DecodePublicKey(config.PublicKey)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to read public key")
+		log.Fatal().Err(err).Msg("failed to decode public key")
 	}
 
 	group, errCtx := errgroup.WithContext(sigCtx)

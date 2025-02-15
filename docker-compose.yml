@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0.6
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_DATABASE: ${MONGO_DATABASE}
+      MONGO_USERNAME: ${MONGO_USERNAME}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+    ports:
+      - "${MONGO_PORT}:${MONGO_PORT}"
+    volumes: 
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - todo_data:/data/db
+  todoauth:
+      build:
+        context: ./
+        dockerfile: ./todoauth/build/docker/Dockerfile
+      ports:
+        - "${AUTH_API_PORT}:${AUTH_API_PORT}"
+      depends_on:
+        - mongo
+      environment: 
+        - CONFIG_PRIVATEKEY=${PRIVATE_KEY}
+        - CONFIG_PUBLICKEY=${PUBLIC_KEY}
+        - CONFIG_TOKEN_ACCESSTOKENDURATION=20m
+        - CONFIG_TOKEN_REFRESHTOKENDURATION=168h
+        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
+        - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
+        - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
+        - CONFIG_MONGO_USETLS=false
+        - CONFIG_HTTPAPI_PORT=${AUTH_API_PORT}
+  todo:
+      build:
+        context: ./
+        dockerfile: ./todo/build/docker/Dockerfile
+      ports:
+        - "${TODO_API_PORT}:${TODO_API_PORT}"
+      depends_on:
+        - mongo
+      environment: 
+        - CONFIG_PUBLICKEY=${PUBLIC_KEY}
+        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
+        - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
+        - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
+        - CONFIG_MONGO_USETLS=false
+        - CONFIG_HTTPAPI_PORT=${TODO_API_PORT}
+volumes: 
+  todo_data:
