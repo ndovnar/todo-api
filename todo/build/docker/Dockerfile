@@ -19,7 +19,7 @@ FROM init as build
 
 RUN make build
 
-FROM alpine:3.19 AS final
+FROM scratch AS final
 
 COPY --from=build /go/src/github.com/nvdovnar/todo-api/todo/output/bin/todo /bin/todo
 
