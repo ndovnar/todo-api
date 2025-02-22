@@ -3,18 +3,19 @@ package converter
 import (
 	"todoprofile/internal/dto"
 	"todoprofile/internal/model"
+	"todoprofile/internal/modeldb"
 )
 
-func DatesModelToDTO(dates *model.Dates) *dto.Dates {
-	return &dto.Dates{
+func DatesDBToModel(dates *modeldb.Dates) *model.Dates {
+	return &model.Dates{
 		Created:  dates.Created,
 		Modified: dates.Modified,
 		Deleted:  dates.Deleted,
 	}
 }
 
-func DatesDTOtoModel(dates *dto.Dates) *model.Dates {
-	return &model.Dates{
+func DatesModelToDTOResponse(dates *model.Dates) *dto.DatesResponse {
+	return &dto.DatesResponse{
 		Created:  dates.Created,
 		Modified: dates.Modified,
 		Deleted:  dates.Deleted,

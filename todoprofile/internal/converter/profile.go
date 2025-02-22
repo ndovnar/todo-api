@@ -3,22 +3,25 @@ package converter
 import (
 	"todoprofile/internal/dto"
 	"todoprofile/internal/model"
+	"todoprofile/internal/modeldb"
 )
 
-func ProfileModelToDTO(profile *model.Profile) *dto.Profile {
-	return &dto.Profile{
-		ID:        profile.ID,
-		FirstName: profile.FirstName,
-		LastName:  profile.LastName,
-		Dates:     DatesModelToDTO(profile.Dates),
-	}
-}
-
-func ProfileDtoToModel(profile *dto.Profile) *model.Profile {
+func ProfileModelDBToModel(profile *modeldb.Profile) *model.Profile {
 	return &model.Profile{
 		ID:        profile.ID,
 		FirstName: profile.FirstName,
 		LastName:  profile.LastName,
-		Dates:     DatesDTOtoModel(profile.Dates),
+		UserID:    profile.UserID,
+		Dates:     DatesDBToModel(profile.Dates),
+	}
+}
+
+func ProfileModelToDTOResponse(profile *model.Profile) *dto.ProfileResponse {
+	return &dto.ProfileResponse{
+		ID:        profile.ID,
+		UserID:    profile.UserID,
+		FirstName: profile.FirstName,
+		LastName:  profile.LastName,
+		Dates:     DatesModelToDTOResponse(profile.Dates),
 	}
 }

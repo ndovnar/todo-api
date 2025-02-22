@@ -10,7 +10,7 @@ import (
 	"todolib/db"
 	"todolib/mongodb"
 
-	"todoprofile/internal/model"
+	"todoprofile/internal/modeldb"
 	"todoprofile/internal/repository"
 )
 
@@ -26,32 +26,29 @@ func NewProfileRepository(db *mongo.Database) *profileRepository {
 	}
 }
 
-func (r *profileRepository) GetProfile(ctx context.Context, arg *repository.GetProfileParams) (*model.Profile, error) {
+func (r *profileRepository) GetProfile(ctx context.Context, arg *repository.GetProfileParams) (*modeldb.Profile, error) {
 	return r.getProfileByUserID(ctx, arg.UserID)
 }
 
-func (r *profileRepository) CreateProfile(ctx context.Context, arg *repository.CreateProfileParams) (*model.Profile, error) {
+func (r *profileRepository) CreateProfile(ctx context.Context, arg *repository.CreateProfileParams) (*modeldb.Profile, error) {
 	currentTime := time.Now()
-	arg.Profile.Dates = &model.Dates{
-		Created:  &currentTime,
-		Modified: &currentTime,
+	profile := &modeldb.Profile{
+		UserID: arg.UserID,
+		Dates: &modeldb.Dates{
+			Created:  &currentTime,
+			Modified: &currentTime,
+		},
 	}
 
-	result, err := r.collection.InsertOne(ctx, arg.Profile)
+	_, err := r.collection.InsertOne(ctx, profile)
 	if err != nil {
 		return nil, mongodb.MongoErrorToDBError(err)
 	}
 
-	id, err := mongodb.InsertedIDToHex(result.InsertedID)
-	if err != nil {
-		return nil, err
-	}
-
-	arg.Profile.ID = id
-	return arg.Profile, nil
+	return r.getProfileByUserID(ctx, arg.UserID)
 }
 
-func (r profileRepository) UpdateProfile(ctx context.Context, arg *repository.UpdateProfileParams) (*model.Profile, error) {
+func (r profileRepository) UpdateProfile(ctx context.Context, arg *repository.UpdateProfileParams) (*modeldb.Profile, error) {
 	filter := bson.M{
 		"deleted": false,
 		"userId":  arg.UserID,
@@ -59,8 +56,8 @@ func (r profileRepository) UpdateProfile(ctx context.Context, arg *repository.Up
 	currentTime := time.Now()
 	update := bson.M{
 		"$set": bson.M{
-			"firstName":      arg.Profile.FirstName,
-			"lastName":       arg.Profile.LastName,
+			"firstName":      arg.FirstName,
+			"lastName":       arg.LastName,
 			"dates.modified": &currentTime,
 		},
 	}
@@ -102,14 +99,14 @@ func (r *profileRepository) DeleteProfile(ctx context.Context, arg *repository.D
 	return nil
 }
 
-func (r *profileRepository) getProfileByUserID(ctx context.Context, userId string) (*model.Profile, error) {
+func (r *profileRepository) getProfileByUserID(ctx context.Context, userId string) (*modeldb.Profile, error) {
 	filter := bson.M{
 		"userId":  userId,
 		"deleted": false,
 	}
 
 	result := r.collection.FindOne(ctx, filter)
-	profile := &model.Profile{}
+	profile := &modeldb.Profile{}
 	err := result.Decode(profile)
 	if err != nil {
 		return nil, mongodb.MongoErrorToDBError(err)

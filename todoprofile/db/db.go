@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,7 +9,6 @@ import (
 )
 
 func CreateIndexes(ctx context.Context, database *mongo.Database) error {
-	fmt.Printf("\"CreateIndexes\": %v\n", "CreateIndexes")
 	usersCollection := database.Collection("profiles")
 	_, err := usersCollection.Indexes().CreateMany(
 		ctx,

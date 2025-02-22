@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"todoprofile/internal/converter"
+	"todoprofile/internal/dto"
 	"todoprofile/internal/service"
 
 	"todolib/auth"
@@ -24,9 +26,10 @@ func NewProfiles(profileService service.ProfileService) *Profiles {
 }
 
 func (h *Profiles) HandleGetProfile(ctx *gin.Context) {
+	fmt.Println("HandleGetProfile")
 	claims := auth.GetClaimsFromContext(ctx)
 
-	todo, err := h.profileService.GetProfile(ctx, &service.GetProfileParams{
+	profile, err := h.profileService.GetProfile(ctx, &service.GetProfileParams{
 		UserID: claims.UserID,
 	})
 	if err != nil {
@@ -39,18 +42,13 @@ func (h *Profiles) HandleGetProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, todo)
-}
-
-type createProfileRequest struct {
-	FirstName string `json:"firstName" binding:"required"`
-	LastName  string `json:"lastName" binding:"required"`
+	ctx.JSON(http.StatusOK, converter.ProfileModelToDTOResponse(profile))
 }
 
 func (h *Profiles) HandleCreateProfile(ctx *gin.Context) {
 	claims := auth.GetClaimsFromContext(ctx)
 
-	var req createProfileRequest
+	var req dto.CreateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
@@ -70,18 +68,13 @@ func (h *Profiles) HandleCreateProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, converter.ProfileModelToDTO(profile))
-}
-
-type updateProfileRequest struct {
-	FirstName string `json:"firstName" binding:"required"`
-	LastName  string `json:"lastName" binding:"required"`
+	ctx.JSON(http.StatusOK, converter.ProfileModelToDTOResponse(profile))
 }
 
 func (h *Profiles) HandleUpdateProfile(ctx *gin.Context) {
 	claims := auth.GetClaimsFromContext(ctx)
 
-	var req updateProfileRequest
+	var req dto.UpdateProfileRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
@@ -102,7 +95,7 @@ func (h *Profiles) HandleUpdateProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, converter.ProfileModelToDTO(profile))
+	ctx.JSON(http.StatusOK, converter.ProfileModelToDTOResponse(profile))
 }
 
 func (h *Profiles) HandleDeleteProfile(ctx *gin.Context) {

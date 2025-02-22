@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"todoprofile/internal/converter"
 	"todoprofile/internal/model"
 	"todoprofile/internal/repository"
 )
@@ -34,7 +35,11 @@ func (s *profileService) GetProfile(ctx context.Context, arg *GetProfileParams) 
 		UserID: arg.UserID,
 	})
 
-	return profile, err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ProfileModelDBToModel(profile), nil
 }
 
 type CreateProfileParams struct {
@@ -45,14 +50,16 @@ type CreateProfileParams struct {
 
 func (s *profileService) CreateProfile(ctx context.Context, arg *CreateProfileParams) (*model.Profile, error) {
 	profile, err := s.profileRepository.CreateProfile(ctx, &repository.CreateProfileParams{
-		Profile: &model.Profile{
-			UserID:    arg.UserID,
-			FirstName: arg.FirstName,
-			LastName:  arg.LastName,
-		},
+		UserID:    arg.UserID,
+		FirstName: arg.FirstName,
+		LastName:  arg.LastName,
 	})
 
-	return profile, err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ProfileModelDBToModel(profile), err
 }
 
 type UpdateProfileParams struct {
@@ -62,15 +69,17 @@ type UpdateProfileParams struct {
 }
 
 func (s *profileService) UpdateProfile(ctx context.Context, arg *UpdateProfileParams) (*model.Profile, error) {
-	updatedProfile, err := s.profileRepository.UpdateProfile(ctx, &repository.UpdateProfileParams{
-		UserID: arg.UserID,
-		Profile: &model.Profile{
-			FirstName: arg.FirstName,
-			LastName:  arg.LastName,
-		},
+	profile, err := s.profileRepository.UpdateProfile(ctx, &repository.UpdateProfileParams{
+		UserID:    arg.UserID,
+		FirstName: arg.FirstName,
+		LastName:  arg.LastName,
 	})
 
-	return updatedProfile, err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ProfileModelDBToModel(profile), err
 }
 
 type DeleteProfileParams struct {

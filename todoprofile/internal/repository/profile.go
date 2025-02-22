@@ -3,21 +3,23 @@ package repository
 import (
 	"context"
 
-	"todoprofile/internal/model"
+	"todoprofile/internal/modeldb"
 )
 
 type GetProfileParams struct {
 	UserID string
 }
 
-type UpdateProfileParams struct {
-	UserID  string
-	Profile *model.Profile
+type CreateProfileParams struct {
+	UserID    string
+	FirstName string
+	LastName  string
 }
 
-type CreateProfileParams struct {
-	UserID  string
-	Profile *model.Profile
+type UpdateProfileParams struct {
+	UserID    string
+	FirstName string
+	LastName  string
 }
 
 type DeleteProfileParams struct {
@@ -25,8 +27,8 @@ type DeleteProfileParams struct {
 }
 
 type ProfileRepository interface {
-	GetProfile(ctx context.Context, arg *GetProfileParams) (*model.Profile, error)
-	CreateProfile(ctx context.Context, arg *CreateProfileParams) (*model.Profile, error)
-	UpdateProfile(ctx context.Context, arg *UpdateProfileParams) (*model.Profile, error)
+	GetProfile(ctx context.Context, arg *GetProfileParams) (*modeldb.Profile, error)
+	CreateProfile(ctx context.Context, arg *CreateProfileParams) (*modeldb.Profile, error)
+	UpdateProfile(ctx context.Context, arg *UpdateProfileParams) (*modeldb.Profile, error)
 	DeleteProfile(ctx context.Context, arg *DeleteProfileParams) error
 }
