@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-profile-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-profile-api
+  template:
+    metadata:
+      labels:
+        app: todo-profile-api
+    spec:
+      containers:
+        - name: todoprofile
+          image: todo-api-todoprofile:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PUBLICKEY
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: public-key
+            - name: CONFIG_MONGO_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-config
+                  key: mongo-hosts
+            - name: CONFIG_MONGO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-username
+            - name: CONFIG_MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-password
+            - name: CONFIG_MONGO_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-profile-api
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-profile-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: internal
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-profile-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: todo-api.127.0.0.1.nip.io
+      http:
+        paths:
+          - path: /profile(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: todo-profile-api
+                port:
+                  number: 8080

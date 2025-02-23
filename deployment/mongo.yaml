@@ -1,0 +1,82 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: docker-sc
+provisioner: docker.io/hostpath
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: todo-api-mongo-pv
+spec:
+  storageClassName: docker-sc
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/Users/qx/data/mongo/todo-api"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: todo-api-mongo-pvc
+spec:
+  storageClassName: docker-sc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-api-mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-api-mongo
+  template:
+    metadata:
+      labels:
+        app: todo-api-mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0.6
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-initdb-root-username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-initdb-root-password
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongo-data
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: todo-api-mongo-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-api-mongo
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-api-mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
