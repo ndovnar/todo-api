@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-auth-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-auth-api
+  template:
+    metadata:
+      labels:
+        app: todo-auth-api
+    spec:
+      containers:
+        - name: todoauth
+          image: todo-api-todoauth:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_PRIVATEKEY
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: private-key
+            - name: CONFIG_PUBLICKEY
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: public-key
+            - name: CONFIG_MONGO_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: todo-config
+                  key: mongo-hosts
+            - name: CONFIG_MONGO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-username
+            - name: CONFIG_MONGO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-password
+            - name: CONFIG_MONGO_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: todo-secrets
+                  key: mongo-database
+            - name: CONFIG_TOKEN_ACCESSTOKENDURATION
+              value: 20m
+            - name: CONFIG_TOKEN_REFRESHTOKENDURATION
+              value: 168h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-auth-api
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-auth-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: internal
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-auth-api
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: todo-api.127.0.0.1.nip.io
+      http:
+        paths:
+          - path: /auth(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: todo-auth-api
+                port:
+                  number: 8080

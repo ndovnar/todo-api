@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+data:
+  mongo-hosts: "todo-api-mongo:27017"
+  mongo-database: "todo"
+  config-mongo-usetls: "false"
+  config-token-refreshtokenduration: "168h"
