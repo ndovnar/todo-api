@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,7 +25,6 @@ func NewProfiles(profileService service.ProfileService) *Profiles {
 }
 
 func (h *Profiles) HandleGetProfile(ctx *gin.Context) {
-	fmt.Println("HandleGetProfile")
 	claims := auth.GetClaimsFromContext(ctx)
 
 	profile, err := h.profileService.GetProfile(ctx, &service.GetProfileParams{

@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"todo/internal/converter"
-	"todo/internal/dto"
 	"todo/internal/model"
 	"todo/internal/repository"
 )
 
 type TodoService interface {
-	GetTodos(ctx context.Context, arg *GetTodosParams) ([]*dto.Todo, int64, error)
-	GetTodo(ctx context.Context, arg *GetTodoParams) (*dto.Todo, error)
-	CreateTodo(ctx context.Context, arg *CreateTodoParams) (*dto.Todo, error)
-	UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*dto.Todo, error)
+	GetTodos(ctx context.Context, arg *GetTodosParams) ([]*model.Todo, int64, error)
+	GetTodo(ctx context.Context, arg *GetTodoParams) (*model.Todo, error)
+	CreateTodo(ctx context.Context, arg *CreateTodoParams) (*model.Todo, error)
+	UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*model.Todo, error)
 	DeleteTodo(ctx context.Context, arg *DeleteTodoParams) error
 }
 
@@ -32,16 +31,18 @@ type GetTodosParams struct {
 	UserID string
 }
 
-func (s *todoService) GetTodos(ctx context.Context, arg *GetTodosParams) ([]*dto.Todo, int64, error) {
+func (s *todoService) GetTodos(ctx context.Context, arg *GetTodosParams) ([]*model.Todo, int64, error) {
 	todos, count, err := s.todoRepository.GetTodos(ctx, &repository.GetTodosParams{
 		UserID: arg.UserID,
-		Pagination: &model.Pagination{
-			Offset: arg.Offset,
-			Limit:  arg.Limit,
-		},
+		Offset: arg.Offset,
+		Limit:  arg.Limit,
 	})
 
-	return converter.TodosModelToDTO(todos), count, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return converter.TodosDBModelToModel(todos), count, err
 }
 
 type GetTodoParams struct {
@@ -49,41 +50,61 @@ type GetTodoParams struct {
 	UserID string
 }
 
-func (s *todoService) GetTodo(ctx context.Context, arg *GetTodoParams) (*dto.Todo, error) {
+func (s *todoService) GetTodo(ctx context.Context, arg *GetTodoParams) (*model.Todo, error) {
 	todo, err := s.todoRepository.GetTodo(ctx, &repository.GetTodoParams{
 		ID:     arg.ID,
 		UserID: arg.UserID,
 	})
 
-	return converter.TodoModelToDTO(todo), err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.TodoDBModelToModel(todo), err
 }
 
 type CreateTodoParams struct {
-	Todo *dto.Todo
+	Title       string
+	Description string
+	UserID      string
 }
 
-func (s *todoService) CreateTodo(ctx context.Context, arg *CreateTodoParams) (*dto.Todo, error) {
+func (s *todoService) CreateTodo(ctx context.Context, arg *CreateTodoParams) (*model.Todo, error) {
 	todo, err := s.todoRepository.CreateTodo(ctx, &repository.CreateTodoParams{
-		Todo: converter.TodoDTOToModel(arg.Todo),
+		UserID:      arg.UserID,
+		Title:       arg.Title,
+		Description: arg.Description,
 	})
 
-	return converter.TodoModelToDTO(todo), err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.TodoDBModelToModel(todo), err
 }
 
 type UpdateTodoParams struct {
-	ID     string
-	UserID string
-	Todo   *dto.Todo
+	ID          string
+	UserID      string
+	Title       string
+	IsCompleted bool
+	Description string
 }
 
-func (s *todoService) UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*dto.Todo, error) {
+func (s *todoService) UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*model.Todo, error) {
 	updatedTodo, err := s.todoRepository.UpdateTodo(ctx, &repository.UpdateTodoParams{
-		ID:     arg.ID,
-		UserID: arg.UserID,
-		Todo:   converter.TodoDTOToModel(arg.Todo),
+		ID:          arg.ID,
+		UserID:      arg.UserID,
+		Title:       arg.Title,
+		Description: arg.Description,
+		IsCompleted: arg.IsCompleted,
 	})
 
-	return converter.TodoModelToDTO(updatedTodo), err
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.TodoDBModelToModel(updatedTodo), err
 }
 
 type DeleteTodoParams struct {

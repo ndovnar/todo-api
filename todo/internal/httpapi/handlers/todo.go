@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"todo/internal/converter"
 	"todo/internal/dto"
 	"todo/internal/service"
 
@@ -24,18 +25,8 @@ func NewTodos(todoService service.TodoService) *Todos {
 	}
 }
 
-type getTodosRequest struct {
-	Offset int64 `form:"offset,default=0"`
-	Limit  int64 `form:"limit,default=50"`
-}
-
-type getTodosResponse struct {
-	Values []*dto.Todo
-	Meta   *httphelper.Meta
-}
-
 func (h *Todos) HandleGetTodos(ctx *gin.Context) {
-	var req getTodosRequest
+	var req dto.GetTodosRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
@@ -53,8 +44,8 @@ func (h *Todos) HandleGetTodos(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, &getTodosResponse{
-		Values: todos,
+	ctx.JSON(http.StatusOK, &dto.GetTodosResponse{
+		Values: converter.TodosModelToDTOresponse(todos),
 		Meta:   httphelper.NewMeta(count),
 	})
 }
@@ -77,59 +68,46 @@ func (h *Todos) HandleGetTodo(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, todo)
-}
-
-type createTodoRequest struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description" binding:"required"`
+	ctx.JSON(http.StatusOK, converter.TodoModelToDTOResponse(todo))
 }
 
 func (h *Todos) HandleCreateTodo(ctx *gin.Context) {
 	claims := auth.GetClaimsFromContext(ctx)
 
-	var req createTodoRequest
+	var req dto.CreateTodoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
 	todo, err := h.todoService.CreateTodo(ctx, &service.CreateTodoParams{
-		Todo: &dto.Todo{
-			Title:       req.Title,
-			Description: req.Description,
-			UserID:      claims.UserID,
-		},
+		Title:       req.Title,
+		Description: req.Description,
+		UserID:      claims.UserID,
 	})
 	if err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusInternalServerError))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, todo)
-}
-
-type updateTodoRequest struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description" binding:"required"`
+	ctx.JSON(http.StatusOK, converter.TodoModelToDTOResponse(todo))
 }
 
 func (h *Todos) HandleUpdateTodo(ctx *gin.Context) {
 	id := ctx.Param("id")
 	claims := auth.GetClaimsFromContext(ctx)
 
-	var req updateTodoRequest
+	var req dto.UpdateTodoRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
 
 	todo, err := h.todoService.UpdateTodo(ctx, &service.UpdateTodoParams{
-		ID:     id,
-		UserID: claims.UserID,
-		Todo: &dto.Todo{
-			Title:       req.Title,
-			Description: req.Description,
-		},
+		ID:          id,
+		UserID:      claims.UserID,
+		Title:       req.Title,
+		Description: req.Description,
+		IsCompleted: req.IsCompleted,
 	})
 	if err != nil {
 		if err == db.ErrNotFound {
@@ -141,7 +119,7 @@ func (h *Todos) HandleUpdateTodo(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, todo)
+	ctx.JSON(http.StatusOK, converter.TodoModelToDTOResponse(todo))
 }
 
 func (h *Todos) HandleDeleteTodo(ctx *gin.Context) {

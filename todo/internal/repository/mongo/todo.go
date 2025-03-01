@@ -13,7 +13,7 @@ import (
 	"todolib/db"
 	"todolib/mongodb"
 
-	"todo/internal/model"
+	"todo/internal/modeldb"
 	"todo/internal/repository"
 )
 
@@ -29,18 +29,18 @@ func NewTodoRepository(db *mongo.Database) *todoRepository {
 	}
 }
 
-func (r *todoRepository) GetTodos(ctx context.Context, arg *repository.GetTodosParams) ([]*model.Todo, int64, error) {
+func (r *todoRepository) GetTodos(ctx context.Context, arg *repository.GetTodosParams) ([]*modeldb.Todo, int64, error) {
 	errGroup, gCtx := errgroup.WithContext(ctx)
 	filter := bson.M{
 		"userId":  arg.UserID,
 		"deleted": false,
 	}
 	options := &options.FindOptions{
-		Limit: &arg.Pagination.Limit,
-		Skip:  &arg.Pagination.Offset,
+		Limit: &arg.Limit,
+		Skip:  &arg.Offset,
 	}
 
-	todos := []*model.Todo{}
+	todos := []*modeldb.Todo{}
 	errGroup.Go(func() error {
 		cursor, err := r.collection.Find(ctx, filter, options)
 		if err != nil {
@@ -72,11 +72,11 @@ func (r *todoRepository) GetTodos(ctx context.Context, arg *repository.GetTodosP
 	return todos, totalCount, nil
 }
 
-func (r *todoRepository) GetTodo(ctx context.Context, arg *repository.GetTodoParams) (*model.Todo, error) {
+func (r *todoRepository) GetTodo(ctx context.Context, arg *repository.GetTodoParams) (*modeldb.Todo, error) {
 	return r.getTodoByID(ctx, arg.ID, arg.UserID)
 }
 
-func (r todoRepository) UpdateTodo(ctx context.Context, arg *repository.UpdateTodoParams) (*model.Todo, error) {
+func (r todoRepository) UpdateTodo(ctx context.Context, arg *repository.UpdateTodoParams) (*modeldb.Todo, error) {
 	objectID, err := mongodb.IDHexToObjectID(arg.ID)
 	if err != nil {
 		fmt.Println(err)
@@ -91,8 +91,9 @@ func (r todoRepository) UpdateTodo(ctx context.Context, arg *repository.UpdateTo
 	currentTime := time.Now()
 	update := bson.M{
 		"$set": bson.M{
-			"title":          arg.Todo.Title,
-			"description":    arg.Todo.Description,
+			"title":          arg.Title,
+			"description":    arg.Description,
+			"completed":      arg.IsCompleted,
 			"dates.modified": &currentTime,
 		},
 	}
@@ -109,14 +110,19 @@ func (r todoRepository) UpdateTodo(ctx context.Context, arg *repository.UpdateTo
 	return r.getTodoByID(ctx, arg.ID, arg.UserID)
 }
 
-func (r *todoRepository) CreateTodo(ctx context.Context, arg *repository.CreateTodoParams) (*model.Todo, error) {
+func (r *todoRepository) CreateTodo(ctx context.Context, arg *repository.CreateTodoParams) (*modeldb.Todo, error) {
 	currentTime := time.Now()
-	arg.Todo.Dates = &model.Dates{
-		Created:  &currentTime,
-		Modified: &currentTime,
+	todo := &modeldb.Todo{
+		Title:       arg.Title,
+		Description: arg.Description,
+		UserID:      arg.UserID,
+		Dates: &modeldb.Dates{
+			Created:  &currentTime,
+			Modified: &currentTime,
+		},
 	}
 
-	result, err := r.collection.InsertOne(ctx, arg.Todo)
+	result, err := r.collection.InsertOne(ctx, todo)
 	if err != nil {
 		return nil, mongodb.MongoErrorToDBError(err)
 	}
@@ -126,8 +132,7 @@ func (r *todoRepository) CreateTodo(ctx context.Context, arg *repository.CreateT
 		return nil, err
 	}
 
-	arg.Todo.ID = id
-	return arg.Todo, nil
+	return r.getTodoByID(ctx, id, arg.UserID)
 }
 
 func (r *todoRepository) DeleteTodo(ctx context.Context, arg *repository.DeleteTodoParams) error {
@@ -161,7 +166,7 @@ func (r *todoRepository) DeleteTodo(ctx context.Context, arg *repository.DeleteT
 	return nil
 }
 
-func (r *todoRepository) getTodoByID(ctx context.Context, id, userId string) (*model.Todo, error) {
+func (r *todoRepository) getTodoByID(ctx context.Context, id, userId string) (*modeldb.Todo, error) {
 	objectID, err := mongodb.IDHexToObjectID(id)
 	if err != nil {
 		return nil, err
@@ -174,7 +179,7 @@ func (r *todoRepository) getTodoByID(ctx context.Context, id, userId string) (*m
 	}
 
 	result := r.collection.FindOne(ctx, filter)
-	todo := &model.Todo{}
+	todo := &modeldb.Todo{}
 	err = result.Decode(todo)
 	if err != nil {
 		return nil, mongodb.MongoErrorToDBError(err)

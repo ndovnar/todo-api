@@ -2,9 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/rs/zerolog/log"
 
 	"todoauth/internal/model"
 	"todoauth/internal/repository"
@@ -14,8 +11,8 @@ import (
 
 type AuthService interface {
 	RenewAccessToken(ctx context.Context, refreshToken string) (string, error)
-	RenewRefreshToken(ctx context.Context, refreshToken string) (string, string, error)
-	Login(ctx context.Context, email, password string) (string, string, error)
+	RenewRefreshToken(ctx context.Context, refreshToken string) (*model.TokenPair, error)
+	Login(ctx context.Context, arg *LoginParams) (*model.TokenPair, error)
 	Logout(ctx context.Context, sessionID string) error
 }
 
@@ -52,77 +49,79 @@ func (s *authService) RenewAccessToken(ctx context.Context, refreshToken string)
 	return aceesToken, nil
 }
 
-func (s *authService) RenewRefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
+func (s *authService) RenewRefreshToken(ctx context.Context, refreshToken string) (*model.TokenPair, error) {
 	claims, err := s.tokenMaker.VerifyToken(refreshToken)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	session, err := s.sessionRepository.CreateSession(ctx, &model.Session{
-		UserID: claims.UserID,
-	})
+	session, err := s.sessionRepository.CreateSession(ctx, claims.UserID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	err = s.sessionRepository.DeleteSession(ctx, claims.ID)
 	if err != nil {
-		fmt.Println(claims.ID)
-		fmt.Println(err)
-		return "", "", err
+		return nil, err
 	}
 
-	aceesToken, err := s.tokenMaker.CreateAccessToken(claims.UserID, session.ID)
+	aceessToken, err := s.tokenMaker.CreateAccessToken(claims.UserID, session.ID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	newRefreshToken, err := s.tokenMaker.CreateRefreshToken(claims.UserID, session.ID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return aceesToken, newRefreshToken, nil
+	tokenPair := &model.TokenPair{
+		AccessToken:  aceessToken,
+		RefreshToken: newRefreshToken,
+	}
+
+	return tokenPair, nil
 }
 
-func (s *authService) Login(ctx context.Context, email, password string) (string, string, error) {
-	user, err := s.userRepository.GetUserByEmail(ctx, email)
+type LoginParams struct {
+	Email    string
+	Password string
+}
+
+func (s *authService) Login(ctx context.Context, arg *LoginParams) (*model.TokenPair, error) {
+	user, err := s.userRepository.GetUserByEmail(ctx, arg.Email)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	err = util.CheckPassword(password, user.Password)
+	err = util.CheckPassword(arg.Password, user.Password)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	session, err := s.sessionRepository.CreateSession(ctx, &model.Session{
-		UserID: user.ID,
-	})
+	session, err := s.sessionRepository.CreateSession(ctx, user.ID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	accessToken, err := s.tokenMaker.CreateAccessToken(user.ID, session.ID)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to create access token")
-		return "", "", err
+		return nil, err
 	}
 
 	refreshToken, err := s.tokenMaker.CreateRefreshToken(user.ID, session.ID)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return accessToken, refreshToken, nil
+	tokenPair := &model.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	return tokenPair, nil
 }
 
 func (s *authService) Logout(ctx context.Context, sessionID string) error {
-	err := s.sessionRepository.DeleteSession(ctx, sessionID)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	return nil
+	return s.sessionRepository.DeleteSession(ctx, sessionID)
 }
