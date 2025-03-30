@@ -1,6 +1,6 @@
 -include .makerc
 SHELL = /bin/bash
-PACKAGE ?= todo
+PACKAGE ?= todostatistic
 
 #Output purposes
 OUTPUT_DIR = $(CURDIR)/output

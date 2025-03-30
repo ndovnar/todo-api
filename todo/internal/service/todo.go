@@ -2,9 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"todo/internal/converter"
 	"todo/internal/model"
 	"todo/internal/repository"
+	"todolib/kafka/events"
+	"todolib/kafka/producer"
+
+	"github.com/rs/zerolog/log"
 )
 
 type TodoService interface {
@@ -13,15 +18,26 @@ type TodoService interface {
 	CreateTodo(ctx context.Context, arg *CreateTodoParams) (*model.Todo, error)
 	UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*model.Todo, error)
 	DeleteTodo(ctx context.Context, arg *DeleteTodoParams) error
+	notifyTodoCreated(arg *model.Todo)
 }
 
 type todoService struct {
-	todoRepository repository.TodoRepository
+	todoRepository  repository.TodoRepository
+	todoEventsTopic string
+	kafkaProducer   *producer.Producer
 }
 
-func NewTodoService(todoRepository repository.TodoRepository) TodoService {
+type TodoServiceParams struct {
+	TodoRepository  repository.TodoRepository
+	TodoEventsTopic string
+	KafkaProducer   *producer.Producer
+}
+
+func NewTodoService(arg *TodoServiceParams) TodoService {
 	return &todoService{
-		todoRepository: todoRepository,
+		todoRepository:  arg.TodoRepository,
+		todoEventsTopic: arg.TodoEventsTopic,
+		kafkaProducer:   arg.KafkaProducer,
 	}
 }
 
@@ -70,7 +86,7 @@ type CreateTodoParams struct {
 }
 
 func (s *todoService) CreateTodo(ctx context.Context, arg *CreateTodoParams) (*model.Todo, error) {
-	todo, err := s.todoRepository.CreateTodo(ctx, &repository.CreateTodoParams{
+	newTodo, err := s.todoRepository.CreateTodo(ctx, &repository.CreateTodoParams{
 		UserID:      arg.UserID,
 		Title:       arg.Title,
 		Description: arg.Description,
@@ -80,7 +96,11 @@ func (s *todoService) CreateTodo(ctx context.Context, arg *CreateTodoParams) (*m
 		return nil, err
 	}
 
-	return converter.TodoDBModelToModel(todo), err
+	todo := converter.TodoDBModelToModel(newTodo)
+
+	s.notifyTodoCreated(todo)
+
+	return todo, nil
 }
 
 type UpdateTodoParams struct {
@@ -117,4 +137,20 @@ func (s *todoService) DeleteTodo(ctx context.Context, arg *DeleteTodoParams) err
 		ID:     arg.ID,
 		UserID: arg.UserID,
 	})
+}
+
+func (s *todoService) notifyTodoCreated(todo *model.Todo) {
+	event := events.TodoEvent{
+		EventType: events.TodoCreatedEventType,
+		UserID:    todo.UserID,
+		TodoID:    todo.ID,
+	}
+
+	msg, err := json.Marshal(&event)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to marshal event to JSON")
+		return
+	}
+
+	s.kafkaProducer.Produce(s.todoEventsTopic, nil, msg)
 }

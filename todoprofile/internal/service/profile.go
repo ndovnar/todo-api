@@ -34,7 +34,6 @@ func (s *profileService) GetProfile(ctx context.Context, arg *GetProfileParams) 
 	profile, err := s.profileRepository.GetProfile(ctx, &repository.GetProfileParams{
 		UserID: arg.UserID,
 	})
-
 	if err != nil {
 		return nil, err
 	}

@@ -79,7 +79,6 @@ func (r *todoRepository) GetTodo(ctx context.Context, arg *repository.GetTodoPar
 func (r todoRepository) UpdateTodo(ctx context.Context, arg *repository.UpdateTodoParams) (*modeldb.Todo, error) {
 	objectID, err := mongodb.IDHexToObjectID(arg.ID)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
