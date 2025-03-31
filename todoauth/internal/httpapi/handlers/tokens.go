@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"todoauth/internal/converter"
+	"todoauth/internal/dto"
 	"todoauth/internal/service"
 
 	"todolib/auth"
@@ -22,20 +24,22 @@ func NewTokens(authService service.AuthService) *Tokens {
 }
 
 func (h *Tokens) HandleLogin(ctx *gin.Context) {
-	var req loginRequest
+	var req dto.LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
 
-	accessToken, refreshToken, err := h.authService.Login(ctx, req.Email, req.Password)
+	tokenPair, err := h.authService.Login(ctx, &service.LoginParams{
+		Email:    req.Email,
+		Password: req.Password,
+	})
 	if err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusUnauthorized))
 		return
 	}
 
-	resp := newTokenPairResponse(accessToken, refreshToken)
-	ctx.JSON(http.StatusOK, resp)
+	ctx.JSON(http.StatusOK, converter.TokenPairModelToDTOResponse(tokenPair))
 }
 
 func (h *Tokens) HandleLogout(ctx *gin.Context) {
@@ -51,7 +55,7 @@ func (h *Tokens) HandleLogout(ctx *gin.Context) {
 }
 
 func (h *Tokens) HandleRenewAccessToken(ctx *gin.Context) {
-	var req renewTokenRequest
+	var req dto.RenewTokenRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
@@ -63,54 +67,21 @@ func (h *Tokens) HandleRenewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	resp := newRenewAccessTokenResponse(accessToken)
-	ctx.JSON(http.StatusOK, resp)
+	ctx.JSON(http.StatusOK, converter.AccessTokenToDTOResponse(accessToken))
 }
 
 func (h *Tokens) HandleRenewRefreshToken(ctx *gin.Context) {
-	var req renewTokenRequest
+	var req dto.RenewTokenRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusBadRequest))
 		return
 	}
 
-	accessToken, refreshToken, err := h.authService.RenewRefreshToken(ctx, req.RefreshToken)
+	tokenPair, err := h.authService.RenewRefreshToken(ctx, req.RefreshToken)
 	if err != nil {
 		ctx.Error(ginhelper.NewHttpError(http.StatusUnauthorized))
 		return
 	}
 
-	resp := newTokenPairResponse(accessToken, refreshToken)
-	ctx.JSON(http.StatusOK, resp)
-}
-
-type renewTokenRequest struct {
-	RefreshToken string `json:"refreshToken" binding:"required"`
-}
-
-type loginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-}
-
-type renewAccessTokenResponse struct {
-	AccessToken string `json:"accessToken"`
-}
-
-func newRenewAccessTokenResponse(accessToken string) *renewAccessTokenResponse {
-	return &renewAccessTokenResponse{
-		AccessToken: accessToken,
-	}
-}
-
-type tokenPairResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-}
-
-func newTokenPairResponse(accessToken string, refreshToken string) *tokenPairResponse {
-	return &tokenPairResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
+	ctx.JSON(http.StatusOK, converter.TokenPairModelToDTOResponse(tokenPair))
 }

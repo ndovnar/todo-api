@@ -10,7 +10,8 @@ import (
 
 	"todolib/mongodb"
 
-	"todoauth/internal/model"
+	"todoauth/internal/modeldb"
+	"todoauth/internal/repository"
 )
 
 type userRepository struct {
@@ -25,11 +26,16 @@ func NewUserRepository(db *mongo.Database) *userRepository {
 	}
 }
 
-func (r *userRepository) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
+func (r *userRepository) CreateUser(ctx context.Context, arg *repository.CreateUserParams) (*modeldb.User, error) {
 	currentTime := time.Now()
-	user.Dates = model.Dates{
-		Created:  &currentTime,
-		Modified: &currentTime,
+
+	user := &modeldb.User{
+		Email:    arg.Email,
+		Password: arg.Password,
+		Dates: &modeldb.Dates{
+			Created:  &currentTime,
+			Modified: &currentTime,
+		},
 	}
 
 	result, err := r.collection.InsertOne(ctx, user)
@@ -37,17 +43,20 @@ func (r *userRepository) CreateUser(ctx context.Context, user *model.User) (*mod
 		return nil, mongodb.MongoErrorToDBError(err)
 	}
 
-	newID, err := mongodb.InsertedIDToHex(result.InsertedID)
+	objectID, err := mongodb.InsertedIDToObjectID(result.InsertedID)
 	if err != nil {
 		return nil, err
 	}
 
-	user.ID = newID
+	filter := bson.M{
+		"_id":     objectID,
+		"deleted": false,
+	}
 
-	return user, nil
+	return r.getUser(ctx, filter)
 }
 
-func (r *userRepository) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+func (r *userRepository) GetUserByID(ctx context.Context, id string) (*modeldb.User, error) {
 	objectID, err := mongodb.IDHexToObjectID(id)
 	if err != nil {
 		return nil, err
@@ -61,7 +70,7 @@ func (r *userRepository) GetUserByID(ctx context.Context, id string) (*model.Use
 	return r.getUser(ctx, filter)
 }
 
-func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*modeldb.User, error) {
 	filter := bson.M{
 		"email":   email,
 		"deleted": false,
@@ -70,9 +79,9 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*mod
 	return r.getUser(ctx, filter)
 }
 
-func (r *userRepository) getUser(ctx context.Context, filter bson.M) (*model.User, error) {
+func (r *userRepository) getUser(ctx context.Context, filter bson.M) (*modeldb.User, error) {
 	res := r.collection.FindOne(ctx, filter)
-	user := &model.User{}
+	user := &modeldb.User{}
 
 	err := res.Decode(user)
 	if err != nil {

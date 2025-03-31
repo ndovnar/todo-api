@@ -3,13 +3,14 @@ package service
 import (
 	"context"
 
+	"todoauth/internal/converter"
 	"todoauth/internal/model"
 	"todoauth/internal/repository"
 	"todoauth/internal/util"
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, email, password string) (*model.User, error)
+	CreateUser(ctx context.Context, args *CreateUserParams) (*model.User, error)
 }
 
 type userService struct {
@@ -22,14 +23,24 @@ func NewUserService(userRepository repository.UserRepository) UserService {
 	}
 }
 
-func (s *userService) CreateUser(ctx context.Context, email, password string) (*model.User, error) {
-	hashedPassword, err := util.HashPassword(password)
+type CreateUserParams struct {
+	Email    string
+	Password string
+}
+
+func (s *userService) CreateUser(ctx context.Context, args *CreateUserParams) (*model.User, error) {
+	hashedPassword, err := util.HashPassword(args.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.userRepository.CreateUser(ctx, &model.User{
-		Email:    email,
+	user, err := s.userRepository.CreateUser(ctx, &repository.CreateUserParams{
+		Email:    args.Email,
 		Password: hashedPassword,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.UserDBModelToModel(user), nil
 }
