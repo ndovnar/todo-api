@@ -9,7 +9,7 @@ RUN apk --no-cache add make bash gcc musl-dev
 WORKDIR /go/src/github.com/nvdovnar/todo-api
 
 COPY todolib/go.mod todolib/go.sum ./todolib/
-COPY todo/go.mod todo/go.sum ./todostatistic/
+COPY todostatistic/go.mod todo/go.sum ./todostatistic/
 
 RUN go work init ./todolib ./todostatistic
 RUN go mod download
