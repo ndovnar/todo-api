@@ -30,7 +30,6 @@ func (h *Todo) HandleTodoEvent(msg *kafka.Message) {
 	switch todoEvent.EventType {
 	case events.TodoCreatedEventType:
 		h.handleTodoCreatedEvent(&todoEvent)
-		h.handleTodoCreatedEvent(&todoEvent)
 	}
 }
 
