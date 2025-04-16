@@ -9,19 +9,19 @@ RUN apk --no-cache add make bash gcc musl-dev
 WORKDIR /go/src/github.com/nvdovnar/todo-api
 
 COPY todolib/go.mod todolib/go.sum ./todolib/
-COPY todo/go.mod todo/go.sum ./todo/
+COPY todostatistic/go.mod todo/go.sum ./todostatistic/
 
-RUN go work init ./todolib ./todo
+RUN go work init ./todolib ./todostatistic
 RUN go mod download
 
 COPY todolib ./todolib
-COPY todo ./todo
+COPY todostatistic ./todostatistic
 
-WORKDIR /go/src/github.com/nvdovnar/todo-api/todo
+WORKDIR /go/src/github.com/nvdovnar/todo-api/todostatistic
 RUN make build
 
 FROM alpine:3 AS final
 
-COPY --from=init /go/src/github.com/nvdovnar/todo-api/todo/output/bin/todo /bin/todo
+COPY --from=init /go/src/github.com/nvdovnar/todo-api/todostatistic/output/bin/todostatistic /bin/todostatistic
 
-ENTRYPOINT ["/bin/todo"]
+ENTRYPOINT ["/bin/todostatistic"]

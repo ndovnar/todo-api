@@ -1,6 +1,45 @@
 version: '3.8'
 
 services:
+  zookeeper:
+      image: confluentinc/cp-zookeeper:7.9.0
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      ports:
+        - "${ZOOKEEPER_PORT}:2181"
+      volumes:
+        - zookeeper_data:/var/lib/zookeeper/data
+        - zookeeper_log:/var/lib/zookeeper/log
+  kafka:
+      image: confluentinc/cp-kafka:7.9.0
+      ports:
+        - ${KAFKA_EXTERNAL_PORT}:9092
+      depends_on:
+        - zookeeper
+      environment:
+        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:${KAFKA_INTERNAL_PORT},EXTERNAL://localhost:${KAFKA_EXTERNAL_PORT}
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_PORT}
+        KAFKA_BROKER_ID: 1
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      volumes:
+        - kafka_data:/var/lib/kafka/data
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - "${KAFKA_UI_PORT}:8080"
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:${KAFKA_INTERNAL_PORT}
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:${ZOOKEEPER_PORT}
+      SERVER_PORT: 8080
   mongo:
     image: mongo:7.0.6
     restart: always
@@ -11,7 +50,7 @@ services:
       MONGO_USERNAME: ${MONGO_USERNAME}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
     ports:
-      - "${MONGO_PORT}:${MONGO_PORT}"
+      - "${MONGO_PORT}:27017"
     volumes: 
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       - todo_data:/data/db
@@ -20,7 +59,7 @@ services:
         context: ./
         dockerfile: ./todoauth/build/docker/Dockerfile
       ports:
-        - "${AUTH_API_PORT}:${AUTH_API_PORT}"
+        - "${TODO_AUTH_API_PORT}:8080"
       depends_on:
         - mongo
       environment: 
@@ -28,43 +67,69 @@ services:
         - CONFIG_PUBLICKEY=${PUBLIC_KEY}
         - CONFIG_TOKEN_ACCESSTOKENDURATION=20m
         - CONFIG_TOKEN_REFRESHTOKENDURATION=168h
-        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_HOSTS=mongo:${MONGO_PORT}
         - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
         - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
         - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
         - CONFIG_MONGO_USETLS=false
-        - CONFIG_HTTPAPI_PORT=${AUTH_API_PORT}
+        - CONFIG_HTTPAPI_PORT=8080
   todoprofile:
       build:
         context: ./
         dockerfile: ./todoprofile/build/docker/Dockerfile
       ports:
-        - "${PROFILE_API_PORT}:${PROFILE_API_PORT}"
+        - "${TODO_PROFILE_API_PORT}:8080"
       depends_on:
         - mongo
+        - kafka
       environment: 
         - CONFIG_PUBLICKEY=${PUBLIC_KEY}
-        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_HOSTS=mongo:${MONGO_PORT}
         - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
         - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
         - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
         - CONFIG_MONGO_USETLS=false
-        - CONFIG_HTTPAPI_PORT=${PROFILE_API_PORT}
+        - CONFIG_HTTPAPI_PORT=8080
   todo:
       build:
         context: ./
         dockerfile: ./todo/build/docker/Dockerfile
       ports:
-        - "${TODO_API_PORT}:${TODO_API_PORT}"
+        - "${TODO_API_PORT}:8080"
       depends_on:
         - mongo
+        - kafka
       environment: 
         - CONFIG_PUBLICKEY=${PUBLIC_KEY}
-        - CONFIG_MONGO_HOSTS=${MONGO_HOST}:${MONGO_PORT}
+        - CONFIG_MONGO_HOSTS=mongo:${MONGO_PORT}
         - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
         - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
         - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
         - CONFIG_MONGO_USETLS=false
-        - CONFIG_HTTPAPI_PORT=${TODO_API_PORT}
+        - CONFIG_HTTPAPI_PORT=8080
+        - CONFIG_KAFKA_BOOTSTRAPSERVERS=kafka:${KAFKA_INTERNAL_PORT}
+        - CONFIG_KAFKA_TODOEVENTSTOPIC=${TODO_EVENTS_KAFKA_TOPIC}
+  todostatistic:
+      build:
+        context: ./
+        dockerfile: ./todostatistic/build/docker/Dockerfile
+      ports:
+        - "${TODO_STATISTIC_API_PORT}:8080"
+      depends_on:
+        - mongo
+        - kafka
+      environment: 
+        - CONFIG_PUBLICKEY=${PUBLIC_KEY}
+        - CONFIG_MONGO_HOSTS=mongo:${MONGO_PORT}
+        - CONFIG_MONGO_USERNAME=${MONGO_DATABASE}
+        - CONFIG_MONGO_PASSWORD=${MONGO_USERNAME}
+        - CONFIG_MONGO_DATABASE=${MONGO_PASSWORD}
+        - CONFIG_MONGO_USETLS=false
+        - CONFIG_HTTPAPI_PORT=8080
+        - CONFIG_CONSUMER_BOOTSTRAPSERVERS=kafka:${KAFKA_INTERNAL_PORT}
+        - CONFIG_CONSUMER_TODOEVENTSTOPIC=${TODO_EVENTS_KAFKA_TOPIC}
 volumes: 
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
   todo_data:

@@ -9,14 +9,14 @@ import (
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 
-	"todolib/kafka/producer"
 	"todolib/mongodb"
 	"todolib/pem"
 
-	"todo/internal/config"
-	"todo/internal/httpapi"
-	"todo/internal/repository/mongo"
-	"todo/internal/service"
+	"todostatistic/internal/config"
+	"todostatistic/internal/consumer"
+	"todostatistic/internal/httpapi"
+	"todostatistic/internal/repository/mongo"
+	"todostatistic/internal/service"
 )
 
 var application string
@@ -50,20 +50,19 @@ func main() {
 		return mongodb.RunShutdown(errCtx)
 	})
 
-	kafkaProducer, err := producer.NewProducer(config.Kafka.BootstrapServers, config.Kafka.ClientID)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create kafka producer")
-	}
+	statisticRepository := mongo.NewStatisticRepository(mongodb.DB)
+	statisticService := service.NewStatisticService(statisticRepository)
 
-	todoRepository := mongo.NewTodoRepository(mongodb.DB)
-	todoService := service.NewTodoService(&service.TodoServiceParams{
-		TodoRepository:  todoRepository,
-		TodoEventsTopic: config.Kafka.TodoEventsTopic,
-		KafkaProducer:   kafkaProducer,
+	consumer, err := consumer.NewConsumer(&config.Consumer, statisticService)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to create consumer")
+	}
+	group.Go(consumer.Run)
+	group.Go(func() error {
+		return consumer.RunShutdown(errCtx)
 	})
 
-	httpapi := httpapi.New(&config.HTTPAPI, publicKey, todoService)
-
+	httpapi := httpapi.New(&config.HTTPAPI, publicKey, statisticService)
 	group.Go(httpapi.Run)
 	group.Go(func() error {
 		return httpapi.RunShutdown(errCtx)

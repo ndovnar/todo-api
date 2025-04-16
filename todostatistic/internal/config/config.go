@@ -9,7 +9,8 @@ import (
 
 	"todolib/mongodb"
 
-	"todo/internal/httpapi"
+	"todostatistic/internal/consumer"
+	"todostatistic/internal/httpapi"
 )
 
 type Config struct {
@@ -17,13 +18,7 @@ type Config struct {
 	Mongo     mongodb.Config
 	HTTPAPI   httpapi.Config
 	PublicKey string `required:"true"`
-	Kafka     Kafka
-}
-
-type Kafka struct {
-	BootstrapServers []string `required:"true"`
-	ClientID         string   `default:"todo-api"`
-	TodoEventsTopic  string   `required:"true"`
+	Consumer  consumer.Config
 }
 
 func Load() (Config, error) {
